@@ -268,4 +268,43 @@ exports.getPostsByCategoryId = async (req, res) => {
   }
 };
 
-exports.specificDistance = async (req, res) => {};
+exports.specificDistance = async (req, res) => {
+  try {
+    const { userLat, userLon, distance } = req.body;
+    function haversineDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371e3; // Earth's radius in meters
+      const φ1 = (lat1 * Math.PI) / 180; // φ, λ in radians
+      const φ2 = (lat2 * Math.PI) / 180;
+      const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+      const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+      const a =
+        Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+      const d = R * c; // in meters
+      return d;
+    }
+
+    const posts = await prisma.post.findMany();
+
+    const nearByPosts = posts.filter((post) => {
+      const postDistance = haversineDistance(
+        userLat,
+        userLon,
+        post.latitude,
+        post.longitude
+      );
+      return postDistance <= distance;
+    });
+
+    return res.status(200).json({
+      message: "Posts found within the specified distance",
+      posts: nearByPosts,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};

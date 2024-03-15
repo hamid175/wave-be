@@ -3,9 +3,7 @@ const http = require("http");
 const socketIo = require("socket.io");
 const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
-
 dotenv.config();
-
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
@@ -13,8 +11,6 @@ const io = socketIo(server);
 const PORT = 7000;
 const secretKey = process.env.SECRETKEY; // Change this to your actual secret key
 
-// Mapping of client IDs to socket objects
-//let connectedClients = {};
 let authenticatedUsers = {};
 
 // JWT authentication middleware

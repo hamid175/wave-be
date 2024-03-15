@@ -1,7 +1,5 @@
 const prisma = require("../configs/databaseConfig");
 
-// const {  validatechat } = require("../validations/chat ");
-
 require("dotenv").config();
 
 exports.sendMessage = async (req, res) => {
