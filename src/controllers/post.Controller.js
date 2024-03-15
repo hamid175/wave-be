@@ -41,6 +41,7 @@ exports.addPost = async (req, res) => {
     if (!isCategory) {
       return res.status(404).json({ message: "message Category not found" });
     }
+    const categoryName = isCategory.name;
     if (!isUser) {
       return res.status(404).json({ message: "message User not found" });
     }
@@ -54,6 +55,7 @@ exports.addPost = async (req, res) => {
         latitude,
         userId,
         categoryId,
+        categoryName,
       },
     });
 
@@ -265,3 +267,5 @@ exports.getPostsByCategoryId = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+exports.specificDistance = async (req, res) => {};
