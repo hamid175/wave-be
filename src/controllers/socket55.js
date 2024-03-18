@@ -1,8 +1,11 @@
+// Send Message and save it in the the database
+
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
 const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
+const prisma = require("../configs/databaseConfig");
 
 dotenv.config();
 
@@ -59,14 +62,30 @@ io.on("connection", (socket) => {
   socket.emit("hello", "Welcome to the app!"); // Emitting "hello" message to the client
 
   // Listen for private messages from clients
-  socket.on("privateMessage", ({ recipientId, message }) => {
+  socket.on("privateMessage", async ({ recipientId, message }) => {
     // Find the recipient's socket and send the message directly to them
+    let chatId = "65f2e1cf29d369d3a23565b4";
     const recipientSocket = authenticatedUsers[recipientId];
     if (recipientSocket) {
       recipientSocket.emit("privateMessage", {
         senderId: socket.userID,
         message: message,
       });
+
+      try {
+        // Save the chat message to the database
+        const newChatMessage = await prisma.chatMessages.create({
+          data: {
+            body: message,
+            sender: { connect: { id: socket.userID } },
+            receiver: { connect: { id: recipientId } },
+            chat: { connect: { id: chatId } },
+          },
+        });
+        console.log("Chat message saved:", newChatMessage);
+      } catch (error) {
+        console.error("Error saving chat message:", error);
+      }
     } else {
       // Handle case where recipient is not found (e.g., offline)
       socket.emit("errorMessage", "Recipient not found or offline");

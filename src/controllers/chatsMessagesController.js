@@ -1,64 +1,87 @@
 const prisma = require("../configs/databaseConfig");
 
+// const {  validatechat } = require("../validations/chat ");
+
 require("dotenv").config();
 
-exports.sendMessage = async (req, res) => {
-  const { senderId, receiverId, chatId, body } = req.body;
-
+exports.getMessages = async function getChatMessagesByChatId(req, res) {
   try {
-    const newChatMessage = await prisma.chatMessages.create({
-      data: {
-        senderId,
-        receiverId,
-        chatId,
-        body,
-      },
-    });
-    res
-      .status(201)
-      .json({ message: "Chat message created", chatMessage: newChatMessage });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Failed to create chat message" });
-  }
-};
+    const chatId = req.params.id;
 
-exports.updateChatMessage = async (req, res) => {
-  const { id } = req.params;
-  const { receiverId, chatId, body } = req.body;
-
-  try {
-    const updatedChatMessage = await prisma.chatMessages.update({
-      where: { id },
-      data: {
-        receiverId,
-        chatId,
-        body,
-      },
-    });
-
-    res.status(200).json(updatedChatMessage);
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Failed to update chat message" });
-  }
-};
-
-exports.getChatMessages = async (req, res) => {
-  const { senderId, receiverId } = req.params;
-
-  try {
     const chatMessages = await prisma.chatMessages.findMany({
       where: {
-        OR: [
-          { senderId, receiverId },
-          { senderId: receiverId, receiverId: senderId },
-        ],
+        chatId: chatId,
+      },
+      orderBy: {
+        createdAt: "asc",
       },
     });
 
-    res.status(200).json(chatMessages);
+    if (!chatMessages || chatMessages.length === 0) {
+      return res.status(404).json({ error: "Chat Id does not exist" });
+    }
+
+    return res.status(200).json({ message: chatMessages });
   } catch (error) {
-    res.status(500).json({ error: "Failed to retrieve chat messages" });
+    console.error("Error fetching chat messages:", error);
+    throw error;
+  }
+};
+
+exports.updateChatMessage = async function getChatMessagesByChatId(req, res) {
+  try {
+    const messageId = req.params.id;
+    const newBody = req.body.newBody;
+
+    const isMessage = await prisma.chatMessages.findUnique({
+      where: {
+        id: messageId,
+      },
+    });
+
+    if (!isMessage) {
+      return res.status(404).json({ error: "Chat Message Not Found" });
+    }
+
+    const newMessage = await prisma.chatMessages.update({
+      where: {
+        id: messageId,
+      },
+      data: {
+        body: newBody,
+      },
+    });
+
+    return res.status(200).json({ updatedMessage: newMessage });
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+exports.deleteChatMessage = async function getChatMessagesByChatId(req, res) {
+  try {
+    const messageId = req.params.id;
+
+    const isMessage = await prisma.chatMessages.findUnique({
+      where: {
+        id: messageId,
+      },
+    });
+
+    if (!isMessage) {
+      return res.status(404).json({ error: "Chat Message Not Found" });
+    }
+
+    const newMessage = await prisma.chatMessages.delete({
+      where: {
+        id: messageId,
+      },
+    });
+
+    return res.status(200).json({ message: "Message Deleted Successfully" });
+  } catch (error) {
+    console.error(error);
+    throw error;
   }
 };

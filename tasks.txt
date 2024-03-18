@@ -1,9 +1,3 @@
-  
-Give chat id and get the chatmessages ...
-get all the senders who sent the messsage... (other are senders)
-
- 
-
 
 
 user: 
@@ -23,8 +17,7 @@ notification:
 send notification on the success of message
 
 
-message: 
-send message 
+message:  
 edit message 
 
 

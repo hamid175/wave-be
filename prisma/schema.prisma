@@ -15,7 +15,7 @@ model User {
   password String 
   firstName String
   lastName String 
-  profile_image String?
+  profile_image String  @default(value: "default_sender_image_url")
   dateOfBirth DateTime
   address String 
   city String 
@@ -105,8 +105,8 @@ model ChatMessages{
  post Post @relation(fields: [postId], references: [id])
  postId String
  messages ChatMessages[] 
- senderProfileImage String
-  receiverProfileImage String
+ senderProfileImage String @default(value: "default_sender_image_url")
+ receiverProfileImage String @default(value: "default_receiver_image_url")
  senderFirstName String
  senderLastName String
  receiverFirstName String

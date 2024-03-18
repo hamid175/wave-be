@@ -1,8 +1,11 @@
+// Send Message and save it in the the database
+
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
 const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
+const prisma = require("../configs/databaseConfig");
 
 dotenv.config();
 
@@ -59,17 +62,66 @@ io.on("connection", (socket) => {
   socket.emit("hello", "Welcome to the app!"); // Emitting "hello" message to the client
 
   // Listen for private messages from clients
-  socket.on("privateMessage", ({ recipientId, message }) => {
-    // Find the recipient's socket and send the message directly to them
+  socket.on("privateMessage", async ({ recipientId, message, chatId }) => {
     const recipientSocket = authenticatedUsers[recipientId];
-    if (recipientSocket) {
-      recipientSocket.emit("privateMessage", {
-        senderId: socket.userID,
-        message: message,
+
+    try {
+      if (!chatId) {
+        socket.emit("errorMessage", "Chat ID doesn't exist");
+        return;
+      }
+
+      const existingChat = await prisma.chat.findFirst({
+        where: {
+          AND: [
+            { id: chatId },
+            {
+              OR: [
+                {
+                  AND: [
+                    { senderId: socket.userID },
+                    { receiverId: recipientId },
+                  ],
+                },
+                {
+                  AND: [
+                    { senderId: recipientId },
+                    { receiverId: socket.userID },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
       });
-    } else {
-      // Handle case where recipient is not found (e.g., offline)
-      socket.emit("errorMessage", "Recipient not found or offline");
+
+      if (existingChat) {
+        chatId = existingChat.id;
+      }
+
+      const newChatMessage = await prisma.chatMessages.create({
+        data: {
+          body: message,
+          sender: { connect: { id: socket.userID } },
+          receiver: { connect: { id: recipientId } },
+          chat: { connect: { id: chatId } },
+        },
+      });
+      console.log("save");
+      console.log("Chat message saved:", newChatMessage);
+
+      if (recipientSocket) {
+        recipientSocket.emit("privateMessage", {
+          senderId: socket.userID,
+          message: message,
+        });
+      } else {
+        socket.emit("errorMessage", "Recipient is offline");
+      }
+      console.log("sent ");
+    } catch (error) {
+      console.error("Error saving or sending chat message:", error);
+      socket.emit("errorMessage", "Error saving or sending chat message");
     }
   });
 
